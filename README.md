@@ -1,635 +1,378 @@
 # 🔴 REDOPS
 
-### AI-Assisted Red Team Operations & Adversary Emulation Platform
+### Closed-Loop Detection Validation for Purple Teams
 
-> **Plan. Emulate. Validate. Improve.**
+> **Emulate. Verify. Fix. Retest.**
 
-REDOPS is an AI-assisted cybersecurity platform built to support **Red Team and Purple Team operations in controlled and authorized environments**.
+REDOPS is an AI-assisted platform that answers one question with evidence:
 
-The platform brings offensive security planning, adversary emulation, attack-path analysis, MITRE ATT&CK mapping, telemetry correlation, evidence management, and detection validation into a unified workspace.
+**"Did our defenses actually detect this technique, and if not, what rule would fix it?"**
 
-Rather than focusing only on executing security tools, REDOPS is designed around the **complete Red Team operation lifecycle** — from planning and reconnaissance to controlled attack simulation, detection analysis, reporting, and retesting.
+It runs controlled adversary-emulation tests in **authorized lab environments**, proves whether each one was detected by correlating security telemetry back to the exact execution, proposes and *validates* detection rules for the gaps, and then retests to confirm the fix.
+
+![status](https://img.shields.io/badge/status-pre--alpha-orange)
+![focus](https://img.shields.io/badge/focus-detection%20validation-red)
+![license](https://img.shields.io/badge/license-proprietary-lightgrey)
 
 ---
 
-## ⚠️ Project Ownership & Usage Notice
+## ⚠️ Ownership & Usage Notice
 
 **© 2026 Saurabh Kori. All Rights Reserved.**
 
-This project and its source code are **proprietary**.
-
-> **Copying, cloning, redistributing, modifying, republishing, commercializing, or using substantial portions of this project or its source code in another project is prohibited without prior written permission from the author.**
-
-Viewing and studying the repository does not grant permission to reuse, reproduce, or redistribute the implementation.
-
-For permission to use, modify, distribute, or build upon this project, please contact the author.
-
-**This repository is not licensed for unrestricted reuse.**
+This project and its source code are **proprietary**. Copying, cloning, redistributing, modifying, republishing, commercializing, or using substantial portions of it in another project is prohibited without prior written permission from the author. Viewing the repository does not grant any right to reuse it. See [License](#-license--copyright).
 
 ---
 
-## 🎯 Vision
+## 📌 Project Status
 
-Modern Red Team operations are more than running offensive security tools.
+REDOPS is in **pre-alpha design and early development**. This README separates what exists from what is planned, so nothing here should be read as a shipped feature unless marked ✅.
 
-A successful operation involves:
-
-```text
-Reconnaissance
-      ↓
-Operational Planning
-      ↓
-Attack-Path Analysis
-      ↓
-Adversary Emulation
-      ↓
-Telemetry Generation
-      ↓
-Detection Validation
-      ↓
-Evidence Collection
-      ↓
-Reporting
-      ↓
-Retesting
-```
-
-REDOPS aims to provide a single operational workspace for this entire workflow.
+| Area | Status |
+|---|---|
+| Architecture & ADRs | 🚧 In progress |
+| Milestone 1: vertical slice (see [Roadmap](#-roadmap)) | 🔜 Next |
+| Everything else | 📝 Planned |
 
 ---
 
-## 🧠 What REDOPS Does
+## 🎯 The Problem
 
-REDOPS uses specialized AI-assisted workflows to help security professionals understand and manage controlled adversary-emulation exercises.
+Organizations buy detection tools and write detection rules, but rarely know which attacker behaviors they would actually catch. Existing approaches each cover only part of the picture:
 
-### 🔴 Red Team Operations
+| Approach | What it does well | What's missing |
+|---|---|---|
+| Emulation engines (MITRE Caldera, Atomic Red Team) | Execute techniques | No judgment on whether defenders saw them |
+| Purple-team trackers (VECTR) | Track results and metrics | Verdicts are entered manually; no automated proof |
+| Commercial BAS platforms | Continuous validation at scale | Closed, costly, limited transparency into *why* a test was missed |
+| Autonomous pentest tools | Prove exploitability | Focus on vulnerabilities, not detection coverage |
 
-Plan and organize security operations around:
+## 💡 What REDOPS Does Differently
 
-* Objectives
-* Scope
-* Rules of Engagement
-* Authorized targets
-* Attack paths
-* MITRE ATT&CK techniques
-* Operational evidence
-
-### 🧠 AI-Assisted Analysis
-
-Specialized agents can assist with:
-
-* Attack-path analysis
-* Security-event investigation
-* Threat intelligence enrichment
-* Technique identification
-* Evidence organization
-* Detection-gap analysis
-* Report generation
-
-### 🗺️ MITRE ATT&CK Integration
-
-Map simulated adversary activity to the MITRE ATT&CK framework.
+REDOPS closes the loop that these tools leave open:
 
 ```text
-Tactic
-  │
-  └── Technique
-        │
-        └── Evidence
-              │
-              └── Detection Result
+   ┌──────────────┐     ┌───────────────┐     ┌───────────────┐
+   │ 1. EMULATE   │────▶│ 2. CORRELATE  │────▶│ 3. VERDICT    │
+   │ run approved │     │ match telemetry│    │ detected /    │
+   │ test in lab  │     │ to run ID      │    │ partial/missed│
+   └──────────────┘     └───────────────┘     └───────┬───────┘
+          ▲                                           │ gap
+          │                                           ▼
+   ┌──────┴───────┐     ┌───────────────┐     ┌───────────────┐
+   │ 6. RETEST    │◀────│ 5. VALIDATE   │◀────│ 4. PROPOSE    │
+   │ confirm fix  │     │ rule vs. real │     │ candidate     │
+   │              │     │ telemetry     │     │ Sigma rule    │
+   └──────────────┘     └───────────────┘     └───────────────┘
+                       (human approval gates steps 1 and 6)
 ```
 
-This creates a clear relationship between **what was simulated, why it matters, and whether it was detected**.
+1. **Proof, not claims.** Every execution carries a unique run ID. Telemetry is matched back to it by host, time window, and process lineage, so a verdict links to the exact events behind it.
+2. **Gaps become fixes.** For missed techniques, REDOPS drafts a candidate [Sigma](https://github.com/SigmaHQ/sigma) rule.
+3. **AI is checked, not trusted.** A proposed rule must pass deterministic validation: it has to fire on the recorded telemetry from the missed run, and it is tested against a benign baseline corpus to estimate false positives. Technique IDs are validated against official ATT&CK data, never taken from the model's word.
+4. **Fixes are verified.** After a rule is deployed, the same test is rerun to confirm the gap is closed.
 
 ---
 
-## 🟣 Purple Team Validation
+## 🔑 Core Capabilities
 
-One of the core concepts of REDOPS is connecting offensive activity with defensive visibility.
-
-```text
-             🔴 RED TEAM
-                  │
-                  │ Simulated Action
-                  ▼
-            ┌─────────────┐
-            │ Target Lab  │
-            └──────┬──────┘
-                   │
-                   │ Telemetry
-                   ▼
-            ┌─────────────┐
-            │ Detection   │
-            │ Platform    │
-            └──────┬──────┘
-                   │
-                   ▼
-           Detection Analysis
-                   │
-             ┌─────┴─────┐
-             ▼           ▼
-          DETECTED      MISSED
-             │           │
-             └─────┬─────┘
-                   ▼
-             Purple Team
-              Analysis
-```
-
-This allows an engagement to answer questions such as:
-
-* Was the simulated technique detected?
-* How quickly was it detected?
-* Which telemetry supported the detection?
-* Which techniques generated no useful alert?
-* Where are the detection gaps?
-* What should be retested?
+| Capability | Description |
+|---|---|
+| **Operations** | Scope, Rules of Engagement, authorized targets, approvals, timeline |
+| **Executor abstraction** | Runs tests through existing engines (Atomic Red Team, Caldera). REDOPS does not author offensive tooling |
+| **Run-ID correlation** | Ties each execution to its telemetry for ground-truth verdicts |
+| **Verdict engine** | `DETECTED` · `PARTIAL` · `MISSED` · `INCONCLUSIVE` with linked evidence and time-to-detect |
+| **ATT&CK coverage** | Technique-level coverage map exportable to ATT&CK Navigator |
+| **AI detection analysis** | Gap explanation and Sigma-rule proposals with validation results |
+| **Retest workflow** | Before/after comparison per technique |
+| **Reporting** | Technical and executive reports generated from evidence |
 
 ---
 
-## 🤖 Agent Architecture
+## 🛡️ Safety Model
 
-REDOPS is designed around specialized security agents rather than a single general-purpose AI.
+REDOPS handles sensitive data and runs controlled offensive tests, so safety is **enforced in code, not in prompts**. An AI model can suggest; it can never authorize.
 
-| Agent                 | Responsibility                                        |
-| --------------------- | ----------------------------------------------------- |
-| 🔎 Recon Agent        | Authorized asset and environment analysis             |
-| 🧭 Attack-Path Agent  | Identifies potential adversary paths                  |
-| 🧠 Intelligence Agent | Enriches indicators and security context              |
-| 🗺️ ATT&CK Agent      | Maps activity to ATT&CK techniques                    |
-| 🧪 Emulation Agent    | Assists with controlled adversary-emulation workflows |
-| 📡 Telemetry Agent    | Correlates simulated actions with security events     |
-| 🛡️ Detection Agent   | Evaluates defensive visibility                        |
-| 📸 Evidence Agent     | Organizes operation evidence and timelines            |
-| 📝 Reporting Agent    | Generates technical and executive reports             |
+| Control | How it works |
+|---|---|
+| **Scope allowlist** | Targets are checked against the operation's authorized scope at the execution layer. Out-of-scope execution is rejected before reaching any executor |
+| **Technique allowlist** | Each operation permits only explicitly approved techniques |
+| **Signed human approval** | Executions require an approval record by an authorized user; AI output cannot create one |
+| **Kill switch** | One action halts all running executions for an operation |
+| **Lab-only guardrails** | Targets must be registered as lab assets; production-tagged assets are blocked by default |
+| **Tamper-evident audit log** | Append-only, hash-chained record of approvals, executions, and AI decisions |
+| **Untrusted-data handling** | Logs, telemetry, and target-derived text are treated as untrusted input to any LLM, to mitigate prompt injection |
+| **No unsupervised actions** | AI components are advisory and cannot trigger execution |
 
----
-
-## 🖥️ Platform Modules
-
-```text
-REDOPS
-│
-├── Operations
-├── Targets
-├── Attack Paths
-├── AI Agents
-├── MITRE ATT&CK
-├── Telemetry
-├── Detection Validation
-├── Evidence
-├── Reports
-└── Settings
-```
-
-### Operations
-
-Create and manage individual Red Team engagements.
-
-### Attack Paths
-
-Visualize relationships between:
-
-```text
-Initial Access
-      ↓
-Execution
-      ↓
-Privilege Escalation
-      ↓
-Credential Access
-      ↓
-Discovery
-      ↓
-Lateral Movement
-      ↓
-Objective
-```
-
-### Evidence
-
-Maintain an engagement timeline containing relevant events, observations, screenshots, logs, timestamps, and technique references.
-
-### Detection Validation
-
-Compare simulated activity with available defensive telemetry and document detection results.
+The platform itself is treated as a high-value target. See [`docs/threat-model.md`](docs/threat-model.md) and [`SECURITY.md`](SECURITY.md).
 
 ---
 
-## ⚡ Quick Start
-
-### Prerequisites
-
-Make sure the following are installed:
-
-* **Git**
-* **Docker Desktop**
-* **Docker Compose**
-* **Node.js 20+**
-* **Python 3.11+**
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/saurabh9555-k/REDOPS.git
-cd REDOPS
-```
-
-### 2. Configure environment variables
-
-Create your local environment file:
-
-```bash
-cp .env.example .env
-```
-
-Then update the required configuration values:
-
-```env
-APP_ENV=development
-
-DATABASE_URL=postgresql://redops:redops@localhost:5432/redops
-REDIS_URL=redis://localhost:6379
-
-AI_PROVIDER=
-AI_API_KEY=
-
-JWT_SECRET=
-```
-
-> Never commit `.env` or API keys to GitHub.
-
-### 3. Start the infrastructure
-
-```bash
-docker compose up -d
-```
-
-This starts the local services required by REDOPS, such as:
+## 🏗️ Architecture
 
 ```text
-PostgreSQL
-Redis
-OpenSearch / Elasticsearch
+                    ┌────────────────────────┐
+                    │      Web UI (Next.js)  │
+                    └───────────┬────────────┘
+                                │ REST / WebSocket
+                    ┌───────────▼────────────┐
+                    │     API (FastAPI)      │
+                    │ AuthN/Z · Policy Engine│◀── scope, technique allowlist,
+                    └───────────┬────────────┘     approvals, kill switch
+                                │
+         ┌──────────────────────┼───────────────────────┐
+         ▼                      ▼                       ▼
+ ┌───────────────┐    ┌──────────────────┐    ┌──────────────────┐
+ │ Executor      │    │ Telemetry        │    │ AI Services      │
+ │ Adapters      │    │ Ingestion &      │    │ (advisory only)  │
+ │ Atomic/Caldera│    │ Correlation      │    │ ATT&CK mapping   │
+ └──────┬────────┘    └────────┬─────────┘    │ Gap analysis     │
+        │                      │              │ Sigma proposals  │
+        ▼                      ▼              │ Reporting        │
+ ┌───────────────┐    ┌──────────────────┐    └────────┬─────────┘
+ │ Isolated Lab  │───▶│ Detection Stack  │             │
+ │ Win/Linux VMs │    │ Wazuh / Elastic  │             │
+ └───────────────┘    └──────────────────┘             │
+                                │                       │
+                    ┌───────────▼───────────────────────▼───┐
+                    │ PostgreSQL (operations, runs, verdicts,│
+                    │ evidence index, audit log, job queue)  │
+                    └────────────────────────────────────────┘
 ```
 
-### 4. Start the backend
+### Design principles
 
-```bash
-cd backend
+- **Wrap, don't reinvent.** Emulation is delegated to proven open-source engines through an adapter interface.
+- **Deterministic core, AI at the edges.** Scope checks, correlation, verdicts, and rule validation are deterministic and testable. AI explains, drafts, and summarizes.
+- **Start small.** The MVP runs on PostgreSQL alone. Heavier stores (Redis, OpenSearch) are added only when measurements justify them.
+- **Model-agnostic.** A provider abstraction supports hosted APIs and local models, since many security teams cannot send telemetry to the cloud.
 
-python -m venv .venv
-```
-
-**Windows:**
-
-```bash
-.venv\Scripts\activate
-```
-
-**Linux / macOS:**
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Run the API:
-
-```bash
-uvicorn api.main:app --reload
-```
-
-Backend API:
+### Core data model
 
 ```text
-http://localhost:8000
+Operation ─┬─ Scope / ROE
+           ├─ Target (lab assets)
+           └─ Run ─┬─ Technique (ATT&CK ID, validated)
+                   ├─ Approval (who, when, signature)
+                   ├─ Evidence (events, logs, artifacts)
+                   ├─ Verdict (detected/partial/missed + time-to-detect)
+                   └─ Finding ─▶ RuleProposal ─▶ Validation ─▶ Retest
+AuditLog (append-only, hash-chained, spans all of the above)
 ```
 
-API documentation:
+### AI components
 
-```text
-http://localhost:8000/docs
-```
+AI is used where it adds value and kept advisory throughout:
 
-### 5. Start the frontend
-
-Open another terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-### 6. Verify the installation
-
-After startup, verify:
-
-```text
-Frontend       → http://localhost:3000
-Backend API    → http://localhost:8000
-API Docs       → http://localhost:8000/docs
-Database       → PostgreSQL
-Cache          → Redis
-```
-
-You should then be able to create a development operation, define an authorized target scope, and begin testing the REDOPS workflow inside your controlled environment.
-
----
-
-## 🧪 Development Environment
-
-For safe development and testing, use an isolated lab such as:
-
-```text
-┌──────────────────────────────────────┐
-│          REDOPS DEV ENVIRONMENT      │
-│                                      │
-│  REDOPS Platform                    │
-│          │                           │
-│          ▼                           │
-│  ┌──────────────┐                    │
-│  │ Isolated Lab │                    │
-│  └──────┬───────┘                    │
-│         │                            │
-│    ┌────┴─────┐                      │
-│    ▼          ▼                      │
-│ Windows VM   Linux VM                │
-│                                      │
-└──────────────────────────────────────┘
-```
-
-Only use targets for which you have explicit authorization.
+| Component | Role | Guardrail |
+|---|---|---|
+| ATT&CK mapper | Maps observed activity to techniques | IDs verified against official ATT&CK STIX data |
+| Detection analyst | Explains why a technique was missed | Cites the specific evidence it relied on |
+| Rule proposer | Drafts candidate Sigma rules | Must pass replay and false-positive validation before review |
+| Report writer | Summarizes operations | Generated only from stored evidence and verdicts |
 
 ---
 
 ## 📊 Example Operation View
 
 ```text
-┌─────────────────────────────────────────────────────────┐
-│ OPERATION: NIGHTFALL-01                    🔴 ACTIVE    │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│ Objective                                               │
-│ Validate detection coverage for simulated intrusion    │
-│                                                         │
-│ Techniques Evaluated              Detection             │
-│                                                         │
-│ T1078  Valid Accounts             ✓ DETECTED            │
-│ T1059  Command & Scripting        ✓ DETECTED            │
-│ T1021  Remote Services            ✗ MISSED              │
-│                                                         │
-│ Evidence Collected: 24                                  │
-│ Detection Events:    17                                  │
-│ Undetected Actions:  7                                   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│ OPERATION: NIGHTFALL-01  (lab)                         ● COMPLETE │
+│ Objective: Validate detection coverage for a simulated intrusion   │
+├────────────────────────────────────────────────────────────────────┤
+│ Technique                          Verdict      Time to detect     │
+│ T1078    Valid Accounts            ✓ DETECTED   00:41              │
+│ T1059.001 PowerShell               ✓ DETECTED   00:12              │
+│ T1053.005 Scheduled Task           ✓ DETECTED   01:30              │
+│ T1547.001 Registry Run Keys        ◐ PARTIAL    04:05              │
+│ T1021.002 SMB/Admin Shares         ✗ MISSED     —                  │
+│ T1003.001 LSASS Memory             ✗ MISSED     —                  │
+├────────────────────────────────────────────────────────────────────┤
+│ Coverage: 3/6 detected · 1 partial · 2 missed                      │
+│ Candidate rules: 2 drafted → 1 passed validation → awaiting review │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
----
-
-## 🔐 Security Philosophy
-
-REDOPS is designed around a **human-in-the-loop** model.
-
-AI recommendations should assist security professionals rather than independently make high-impact decisions.
-
-Operations should be governed by:
-
-* Defined scope
-* Rules of Engagement
-* Authorized targets
-* Human approval
-* Auditability
-* Evidence preservation
-
-The platform is intended for **labs, training environments, authorized security assessments, and controlled adversary-emulation exercises**.
+*Illustrative mock-up of the target UI.*
 
 ---
 
-## 🛠️ Technology Stack
+## ⚡ Quick Start
 
-### Frontend
+> **Target experience for Milestone 1.** These commands describe the intended workflow and will be live when the vertical slice ships.
 
-* Next.js
-* TypeScript
-* Tailwind CSS
-* React
-* React Flow
-* Recharts
+### Prerequisites
 
-### Backend
+Docker + Docker Compose, Python 3.11+, Node.js 20+, Git.
 
-* Python
-* FastAPI
-* Pydantic
-* WebSockets
+### One-command demo (planned)
 
-### AI / Agents
+```bash
+git clone https://github.com/saurabh9555-k/REDOPS.git
+cd REDOPS
+cp .env.example .env      # set JWT_SECRET; AI provider is optional
+make demo                 # starts the stack and loads sample operation data
+```
 
-* Agent orchestration framework
-* LLM integration
-* Tool-based workflows
-* Structured agent state
-* Human approval workflows
+Then open `http://localhost:3000` to explore a pre-loaded operation, including verdicts, evidence, and a generated report, **without running any live emulation**.
 
-### Data
+### Full lab setup (planned)
 
-* PostgreSQL
-* Redis
-* Elasticsearch / OpenSearch
-
-### Security
-
-* MITRE ATT&CK
-* Sigma-compatible detection concepts
-* Security event telemetry
-* IOC enrichment
-
-### Deployment
-
-* Docker
-* Docker Compose
-* Linux
-* Optional Kubernetes deployment
-
----
-
-## 🏗️ High-Level Architecture
+For live runs you need an isolated lab (never a production network):
 
 ```text
-                         ┌─────────────────────┐
-                         │    REDOPS UI        │
-                         │  Command Center     │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │    API Gateway      │
-                         └──────────┬──────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │ Red Team            │
-                         │ Orchestrator        │
-                         └──────────┬──────────┘
-                                    │
-              ┌─────────────────────┼─────────────────────┐
-              │                     │                     │
-              ▼                     ▼                     ▼
-         Recon Agent          Attack-Path Agent     Intel Agent
-              │                     │                     │
-              └─────────────────────┼─────────────────────┘
-                                    │
-                                    ▼
-                         ┌─────────────────────┐
-                         │ Evidence & Context  │
-                         └──────────┬──────────┘
-                                    │
-                         ┌──────────┴──────────┐
-                         ▼                     ▼
-                  Telemetry Layer       MITRE ATT&CK
-                         │
-                         ▼
-                  Detection Analysis
-                         │
-                         ▼
-                   Human Approval
-                         │
-                         ▼
-                    Final Report
+REDOPS ──▶ Isolated lab network ──┬─▶ Windows VM (Sysmon + Wazuh agent)
+                                  └─▶ Linux VM  (Wazuh agent)
 ```
+
+See [`docs/lab-setup.md`](docs/lab-setup.md) for the guide.
+
+### Configuration
+
+```env
+APP_ENV=development
+DATABASE_URL=postgresql://redops:redops@localhost:5432/redops
+JWT_SECRET=                 # required; generate a long random value
+AI_PROVIDER=                # optional: hosted or local model
+AI_API_KEY=                 # optional
+```
+
+> Never commit `.env` or API keys.
 
 ---
 
-## 📁 Project Structure
+## 🧰 Technology Stack
+
+| Layer | MVP | Later (when needed) |
+|---|---|---|
+| Frontend | Next.js, TypeScript, Tailwind, React Flow, Recharts | |
+| Backend | Python, FastAPI, Pydantic, WebSockets | |
+| Data | PostgreSQL (data, queue, evidence index) | Redis, OpenSearch |
+| Emulation | Atomic Red Team via executor adapter | Caldera adapter |
+| Detection backend | Wazuh + Sysmon (first integration) | Elastic and others |
+| Detection format | Sigma | Backend-specific conversions |
+| AI | Provider-agnostic layer, local-model option | Orchestration framework if workflows grow |
+| Deployment | Docker Compose | Kubernetes |
+
+---
+
+## 🚀 Roadmap
+
+Delivery is organized as **vertical slices**, each a working end-to-end product increment.
+
+### Milestone 1: First Verdict (vertical slice)
+
+- [ ] Operation with scope and ROE
+- [ ] Policy engine: scope allowlist, technique allowlist, approvals, kill switch
+- [ ] Atomic Red Team executor adapter with run-ID tagging
+- [ ] Wazuh/Sysmon telemetry ingestion
+- [ ] Correlation engine and verdicts (detected / partial / missed)
+- [ ] Hash-chained audit log
+- [ ] ATT&CK Navigator export and PDF report
+- [ ] `make demo` with sample data
+
+### Milestone 2: Close the Loop
+
+- [ ] AI gap analysis with cited evidence
+- [ ] Sigma rule proposals
+- [ ] Replay validation and benign-baseline false-positive check
+- [ ] Retest workflow with before/after comparison
+
+### Milestone 3: Team Scale
+
+- [ ] Roles and RBAC, multi-operation dashboards
+- [ ] Caldera adapter and additional detection backends
+- [ ] Attack-path visualization
+- [ ] Executive reporting and coverage trends over time
+
+### Milestone 4: Hardening & Extensibility
+
+- [ ] Plugin interface for executors and detection backends
+- [ ] Redis / OpenSearch where benchmarks justify them
+- [ ] Optional Kubernetes deployment
+- [ ] Third-party security review of the platform
+
+---
+
+## 📏 Success Metrics
+
+REDOPS is measured against labeled lab runs:
+
+| Metric | Why it matters |
+|---|---|
+| **Correlation accuracy** | Verdicts must match known ground truth |
+| **Time from run to verdict** | Determines whether iteration is practical |
+| **Rule validation pass rate** | Share of AI-proposed Sigma rules that survive replay and false-positive checks |
+| **Gap closure rate** | Share of missed techniques that pass on retest after a fix |
+| **Reproducibility** | A saved operation produces the same verdicts when re-evaluated |
+
+---
+
+## 📁 Project Structure (planned)
 
 ```text
 REDOPS/
-│
-├── frontend/
-│   ├── components/
-│   ├── pages/
-│   ├── features/
-│   └── lib/
-│
+├── frontend/              # Next.js UI
 ├── backend/
-│   ├── api/
-│   ├── agents/
-│   ├── models/
-│   ├── services/
+│   ├── api/               # FastAPI routes
+│   ├── policy/            # Scope, approvals, kill switch
+│   ├── executors/         # Atomic / Caldera adapters
+│   ├── telemetry/         # Ingestion & correlation
+│   ├── verdicts/          # Verdict engine
+│   ├── ai/                # Advisory AI services
 │   └── core/
-│
-├── agents/
-│   ├── recon/
-│   ├── attack_path/
-│   ├── intelligence/
-│   ├── attack_emulation/
-│   ├── telemetry/
-│   ├── detection/
-│   └── reporting/
-│
-├── database/
-│   ├── migrations/
-│   └── schemas/
-│
 ├── detection/
-│   └── rules/
-│
+│   ├── rules/             # Sigma rules
+│   └── baselines/         # Benign telemetry corpora
+├── database/
+│   └── migrations/
 ├── docs/
 │   ├── architecture/
-│   ├── operations/
+│   ├── adr/               # Architecture Decision Records
+│   ├── threat-model.md
+│   ├── lab-setup.md
 │   └── methodology/
-│
 ├── docker/
-│
 ├── tests/
-│
+├── SECURITY.md
 └── README.md
 ```
 
 ---
 
-## 🚀 Development Roadmap
+## 📚 Documentation & Decisions
 
-### Phase 1 — Foundation
+Key design choices are recorded as ADRs in [`docs/adr/`](docs/adr/):
 
-* [ ] Authentication
-* [ ] Dashboard
-* [ ] Operations management
-* [ ] Asset inventory
-* [ ] Event ingestion
-* [ ] Basic reporting
-
-### Phase 2 — Red Team Intelligence
-
-* [ ] Recon Agent
-* [ ] Attack-Path Agent
-* [ ] MITRE ATT&CK integration
-* [ ] Evidence timeline
-* [ ] Operation workspace
-
-### Phase 3 — Purple Team
-
-* [ ] Telemetry correlation
-* [ ] Detection validation
-* [ ] Detection-gap analysis
-* [ ] Technique coverage visualization
-* [ ] Retest workflow
-
-### Phase 4 — Advanced Agentic Workflows
-
-* [ ] Multi-agent orchestration
-* [ ] Context-aware investigations
-* [ ] AI-assisted operation planning
-* [ ] Automated evidence organization
-* [ ] Executive reporting
-* [ ] Advanced operation analytics
+| ADR | Decision |
+|---|---|
+| 001 | Wrap Caldera/Atomic Red Team instead of building a custom executor |
+| 002 | PostgreSQL-only MVP; add OpenSearch when measurements justify it |
+| 003 | Agent orchestration approach (state machine vs framework) |
+| 004 | Safety enforcement architecture (policy engine, approvals, kill switch) |
+| 005 | Telemetry correlation via run-ID tagging |
+| 006 | First detection backend: Wazuh |
 
 ---
 
 ## 🧪 Intended Use
 
-REDOPS is designed for:
+REDOPS is for:
 
-**Authorized Red Team Exercises**
-
-Controlled adversary-emulation engagements conducted with explicit permission.
-
-**Security Research**
-
-Studying attack paths, detection engineering, and security telemetry in isolated environments.
-
-**Cybersecurity Training**
-
-Building practical Red Team and Purple Team skills using controlled lab infrastructure.
-
-**Detection Validation**
-
-Testing whether simulated offensive techniques generate the expected defensive visibility.
-
----
+- **Authorized purple-team exercises** with explicit permission
+- **Detection engineering** and rule validation in controlled labs
+- **Security research and training** in isolated environments
+- **Defensive coverage measurement** against MITRE ATT&CK
 
 ## ⚠️ Responsible Use
 
-REDOPS must only be used against systems and environments for which you have explicit authorization.
+REDOPS must only be used against systems for which you have **explicit written authorization**, and by design it is restricted to registered lab assets. Do not use it to compromise, disrupt, or gain unauthorized access to any system, network, account, or data. Users are solely responsible for compliance with applicable laws and agreements.
 
-Do not use the platform to compromise, disrupt, access, or maintain unauthorized access to systems, networks, accounts, or data.
+---
 
-The project is intended to support **responsible offensive-security research and authorized security operations**.
+## 🤝 Third-Party Components
+
+REDOPS integrates with or builds on open-source projects such as MITRE ATT&CK, Atomic Red Team, MITRE Caldera, and Sigma, each under its own license and terms. A full list with license notes will be maintained in `docs/third-party.md`. All trademarks belong to their respective owners.
 
 ---
 
@@ -637,11 +380,9 @@ The project is intended to support **responsible offensive-security research and
 
 This repository is **proprietary and not released under an open-source license**.
 
-Copyright © 2026 **Saurabh Kori**
+Copyright © 2026 **Saurabh Kori**. All rights reserved.
 
-All rights reserved.
-
-Unauthorized reproduction, copying, redistribution, modification, publication, or commercial use of this project's source code or substantial portions of its implementation is prohibited without prior written permission from the author.
+Unauthorized reproduction, copying, redistribution, modification, publication, or commercial use of this project's source code or substantial portions of its implementation is prohibited without prior written permission from the author. For permission requests, contact the author.
 
 ---
 
@@ -649,22 +390,12 @@ Unauthorized reproduction, copying, redistribution, modification, publication, o
 
 ### Saurabh Kori
 
-Cybersecurity Aspirant • Red Team & Offensive Security Enthusiast
+Cybersecurity Aspirant · Red Team & Offensive Security Enthusiast
 
-**Focus Areas**
-
-`Red Teaming` · `Offensive Security` · `Adversary Emulation` · `Purple Teaming` · `Threat Detection` · `Cybersecurity Research`
-
----
-
-## ⭐ Project Status
-
-> 🚧 **REDOPS is an actively developed project.**
-
-The architecture, agents, interfaces, and capabilities may evolve significantly as development continues.
+`Red Teaming` · `Purple Teaming` · `Detection Engineering` · `Adversary Emulation` · `Cybersecurity Research`
 
 ---
 
 ### 🔴 REDOPS
 
-**Turning offensive security operations into measurable, explainable, and evidence-driven security exercises.**
+**Turning security assumptions into measurable, evidence-backed, retestable results.**
