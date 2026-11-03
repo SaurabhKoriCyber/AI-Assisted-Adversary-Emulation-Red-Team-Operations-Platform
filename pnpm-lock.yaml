@@ -26,6 +26,9 @@ importers:
       lenis:
         specifier: ^1.3.27
         version: 1.3.27(react@19.2.4)
+      oidc-client-ts:
+        specifier: ^3.0.1
+        version: 3.5.0
       react:
         specifier: ^19.0.0
         version: 19.2.4
@@ -729,6 +732,10 @@ packages:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   lenis@1.3.27:
     resolution: {integrity: sha512-QIHNH4LIfWyLfgH/5K0aTGZgyFJJ7GfHNcaH/AIgyKjb8gstLh5siNGvrVqz1w5ClLXzOvllBVk7vby8JzUVPQ==}
     peerDependencies:
@@ -847,6 +854,10 @@ packages:
     resolution: {integrity: sha512-Y2tUNy4ouw6tq5oDSKeQYGOyhkUBhNOcGV/02KC+6kd9eDGqdZd++mjMiIDilrBYvjEnCYvVtsuHCuP+okSfug==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
+
+  oidc-client-ts@3.5.0:
+    resolution: {integrity: sha512-l2q8l9CTCTOlbX+AnK4p3M+4CEpKpyQhle6blQkdFhm0IsBqsxm15bYaSa11G7pWdsYr6epdsRZxJpCyCRbT8A==}
+    engines: {node: '>=18'}
 
   oxfmt@0.2.0:
     resolution: {integrity: sha512-99bPAiYDiYikUej8U0Slv8pcFVbMe38Ulm+T6bJ4KQgm+UsbgTKCBpWxbD/LRz1CuYw3PRpqfPv6AkQsIAo3Ag==}
@@ -1690,6 +1701,8 @@ snapshots:
 
   jiti@2.6.1: {}
 
+  jwt-decode@4.0.0: {}
+
   lenis@1.3.27(react@19.2.4):
     optionalDependencies:
       react: 19.2.4
@@ -1769,6 +1782,10 @@ snapshots:
   motion-utils@14.7.0: {}
 
   nanoid@3.3.19: {}
+
+  oidc-client-ts@3.5.0:
+    dependencies:
+      jwt-decode: 4.0.0
 
   oxfmt@0.2.0:
     optionalDependencies:

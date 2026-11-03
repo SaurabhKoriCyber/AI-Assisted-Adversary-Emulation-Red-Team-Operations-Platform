@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-redops}
+      POSTGRES_USER: ${POSTGRES_USER:-redops}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - redops-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-redops} -d ${POSTGRES_DB:-redops}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ./backend
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      REDOPS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-redops}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-redops}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      REDOPS_ENVIRONMENT: ${REDOPS_ENVIRONMENT:-production}
+      REDOPS_DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-redops}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-redops}
+      REDOPS_OIDC_ISSUER: ${REDOPS_OIDC_ISSUER:?Set REDOPS_OIDC_ISSUER in .env}
+      REDOPS_OIDC_AUDIENCE: ${REDOPS_OIDC_AUDIENCE:?Set REDOPS_OIDC_AUDIENCE in .env}
+      REDOPS_OIDC_JWKS_URL: ${REDOPS_OIDC_JWKS_URL:?Set REDOPS_OIDC_JWKS_URL in .env}
+      REDOPS_BOOTSTRAP_ADMIN_EMAIL: ${REDOPS_BOOTSTRAP_ADMIN_EMAIL:?Set REDOPS_BOOTSTRAP_ADMIN_EMAIL in .env}
+      REDOPS_CORS_ORIGINS: ${REDOPS_CORS_ORIGINS:-http://localhost:8080}
+      REDOPS_MFA_AMR_VALUES: ${REDOPS_MFA_AMR_VALUES:-mfa,otp}
+      REDOPS_MFA_ACR_VALUES: ${REDOPS_MFA_ACR_VALUES:-}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:?Set VITE_OIDC_AUTHORITY in .env}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:?Set VITE_OIDC_CLIENT_ID in .env}
+        VITE_OIDC_API_AUDIENCE: ${VITE_OIDC_API_AUDIENCE:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+volumes:
+  redops-postgres:

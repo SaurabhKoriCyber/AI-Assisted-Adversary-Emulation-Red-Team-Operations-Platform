@@ -30,9 +30,10 @@ REDOPS is in **pre-alpha design and early development**. This README separates w
 
 | Area | Status |
 |---|---|
-| Architecture & ADRs | 🚧 In progress |
-| Milestone 1: vertical slice (see [Roadmap](#-roadmap)) | 🔜 Next |
-| Everything else | 📝 Planned |
+| React/Vite prototype | ✅ Available |
+| Governance API (OIDC, tenants, engagements, approvals, audit) | 🚧 Initial implementation |
+| Executor, telemetry, verdict, evidence upload, billing, and email services | 📝 Not implemented |
+| Production deployment | 🚧 Provider-neutral Docker baseline; requires deployment-specific setup |
 
 ---
 
@@ -199,45 +200,41 @@ AI is used where it adds value and kept advisory throughout:
 
 ## ⚡ Quick Start
 
-> **Target experience for Milestone 1.** These commands describe the intended workflow and will be live when the vertical slice ships.
+> The stack currently provides the web prototype and governance API only. It does not execute emulation or connect to live targets.
 
 ### Prerequisites
 
-Docker + Docker Compose, Python 3.11+, Node.js 20+, Git.
+Docker + Docker Compose, and an OIDC identity provider that issues RS256 access tokens with the configured API audience and verified email claims.
 
-### One-command demo (planned)
+### Start the stack
 
 ```bash
-git clone https://github.com/saurabh9555-k/REDOPS.git
-cd REDOPS
-cp .env.example .env      # set JWT_SECRET; AI provider is optional
-make demo                 # starts the stack and loads sample operation data
+cp .env.example .env
+# Configure OIDC and database values in .env, then run:
+docker compose up --build
 ```
 
-Then open `http://localhost:3000` to explore a pre-loaded operation, including verdicts, evidence, and a generated report, **without running any live emulation**.
+Open `http://localhost:8080`. Register `http://localhost:8080/auth/callback` as the OIDC redirect URI and use the configured bootstrap Owner to create the first organization.
 
-### Full lab setup (planned)
+### Live lab setup (not available)
 
-For live runs you need an isolated lab (never a production network):
+Live lab connectivity is not part of this backend release.
 
-```text
-REDOPS ──▶ Isolated lab network ──┬─▶ Windows VM (Sysmon + Wazuh agent)
-                                  └─▶ Linux VM  (Wazuh agent)
-```
 
-See [`docs/lab-setup.md`](docs/lab-setup.md) for the guide.
+### Legacy configuration note
 
-### Configuration
+The variables shown in the legacy example below are not used by the current Compose stack. Use the root `.env.example` and [deployment setup](docs/deployment.md) instead.
 
 ```env
-APP_ENV=development
+REDOPS_ENVIRONMENT=production
 DATABASE_URL=postgresql://redops:redops@localhost:5432/redops
-JWT_SECRET=                 # required; generate a long random value
-AI_PROVIDER=                # optional: hosted or local model
-AI_API_KEY=                 # optional
+REDOPS_OIDC_ISSUER=          # HTTPS issuer URL
+REDOPS_OIDC_AUDIENCE=        # expected API token audience
+REDOPS_OIDC_JWKS_URL=        # identity provider JWKS endpoint
+REDOPS_BOOTSTRAP_ADMIN_EMAIL= # verified initial Owner identity
 ```
 
-> Never commit `.env` or API keys.
+> Never commit `.env` or API keys. Read [deployment setup](docs/deployment.md) before exposing the service publicly.
 
 ---
 
@@ -245,14 +242,14 @@ AI_API_KEY=                 # optional
 
 | Layer | MVP | Later (when needed) |
 |---|---|---|
-| Frontend | Next.js, TypeScript, Tailwind, React Flow, Recharts | |
-| Backend | Python, FastAPI, Pydantic, WebSockets | |
-| Data | PostgreSQL (data, queue, evidence index) | Redis, OpenSearch |
-| Emulation | Atomic Red Team via executor adapter | Caldera adapter |
-| Detection backend | Wazuh + Sysmon (first integration) | Elastic and others |
+| Frontend | React, Vite, TypeScript, Tailwind, React Flow, Recharts | |
+| Backend | FastAPI, Pydantic, SQLAlchemy, OIDC | |
+| Data | PostgreSQL (governance records) | Redis, OpenSearch |
+| Emulation | Not implemented | Authorized lab-only adapter |
+| Detection backend | Not implemented | Wazuh + Sysmon, Elastic |
 | Detection format | Sigma | Backend-specific conversions |
 | AI | Provider-agnostic layer, local-model option | Orchestration framework if workflows grow |
-| Deployment | Docker Compose | Kubernetes |
+| Deployment | Docker Compose baseline | Provider-specific TLS, managed data, Kubernetes |
 
 ---
 
