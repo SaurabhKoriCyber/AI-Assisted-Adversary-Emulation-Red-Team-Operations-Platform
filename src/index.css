@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter+Tight:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import 'tailwindcss';
+
+/* Design tokens: single source of truth, mirrored in src/design/tokens.ts */
+@theme {
+  --color-ink: #07080a;
+  --color-g1: #0d0f12;
+  --color-g2: #14171c;
+  --color-g3: #1b1f26;
+  --color-bone: #ece9e2;
+  --color-mute: #8a8d93;
+  --color-crimson: #c1121f;
+  --color-crimson-ink: #e5575e; /* AA-safe crimson for small text on ink */
+  --color-teal: #3fa7a0;
+  --color-amber: #d9a441;
+  --color-line: rgba(255, 255, 255, 0.07);
+  --color-line-2: rgba(255, 255, 255, 0.12);
+
+  --font-display: 'Instrument Serif', 'Cormorant Garamond', serif;
+  --font-sans: 'Inter Tight', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-ink);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body { min-height: 100vh; overflow-x: hidden; }
+  /* No visible scrollbars anywhere; scrolling remains fully functional */
+  html, body, * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar, html::-webkit-scrollbar { display: none; width: 0; height: 0; }
+  ::selection { background: rgba(193, 18, 31, 0.45); color: #fff; }
+  :focus-visible { outline: 1px solid var(--color-bone); outline-offset: 3px; border-radius: 2px; }
+  button { cursor: pointer; }
+  h1, h2, h3 { font-weight: 400; }
+}
+
+@layer utilities {
+  .label { font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-mute); font-weight: 500; }
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+  .display { font-family: var(--font-display); letter-spacing: -0.025em; line-height: 0.98; }
+  .matte {
+    background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0) 40%), var(--color-g1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 0 rgba(0,0,0,0.6), 0 24px 48px -24px rgba(0,0,0,0.8);
+    border: 1px solid var(--color-line);
+  }
+  .hair-b { border-bottom: 1px solid var(--color-line); }
+  .hair-t { border-top: 1px solid var(--color-line); }
+  .mask-line { overflow: hidden; display: block; }
+}
+
+/* Film grain + vignette overlays (fixed, inert) */
+.grain, .vignette { position: fixed; inset: 0; pointer-events: none; z-index: 90; }
+.grain {
+  opacity: 0.03; mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.vignette { background: radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(0,0,0,0.55) 100%); z-index: 89; }
+
+/* Skeleton: restrained shimmer */
+.skel { background: linear-gradient(100deg, var(--color-g2) 30%, var(--color-g3) 50%, var(--color-g2) 70%); background-size: 300% 100%; animation: shimmer 2.4s var(--ease-io) infinite; border-radius: 2px; }
+@keyframes shimmer { from { background-position: 100% 0 } to { background-position: -100% 0 } }
+
+/* Row hover: slow crimson underline draw */
+.row-draw { position: relative; }
+.row-draw::after { content: ''; position: absolute; left: 0; bottom: -1px; height: 1px; width: 100%; background: var(--color-crimson); transform: scaleX(0); transform-origin: left; transition: transform 800ms var(--ease-out); }
+.row-draw:hover::after, .row-draw:focus-within::after, .row-draw[data-active='true']::after { transform: scaleX(1); }
+
+@keyframes tick-in { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+.tick-in { animation: tick-in 700ms var(--ease-out) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: fixed; inset: 0; width: 210mm; background: #fff; }
+  .grain, .vignette { display: none; }
+}
+
+/* React Flow overrides */
+.react-flow { background: transparent !important; }
+.react-flow__attribution { display: none; }
+.react-flow__handle { opacity: 0 !important; }
